@@ -17,7 +17,7 @@ TRAIN_PATH = resolve_path("/data/training.csv", "training.csv")
 TEST_PATH = resolve_path("/data/test.csv", "test.csv")
 OUTPUT_PATH = resolve_path("/data/aki.csv", "aki.csv")
 
-# Historical creatinine measurements provided in the dataset
+# Expected creatinine column name pattern
 CREAT_COLS = [f"creatinine_result_{i}" for i in range(48)]
 
 # Classification threshold chosen to favour recall
@@ -29,11 +29,14 @@ def extract_features(df, training=True):
     Convert raw patient records into a feature matrix suitable for
     tabular classification models.
     """
+    # Use only creatinine columns that actually exist in the dataset
+    available_creat_cols = [c for c in CREAT_COLS if c in df.columns]
+
     X_rows = []
     y = []
 
     for _, row in df.iterrows():
-        creats = row[CREAT_COLS].dropna().values
+        creats = row[available_creat_cols].dropna().values
         if len(creats) == 0:
             continue
 
@@ -59,7 +62,7 @@ def extract_features(df, training=True):
 
 
 def main():
-    # Train model on labelled data
+    # Train model
     train_df = pd.read_csv(TRAIN_PATH)
     X_train, y_train = extract_features(train_df, training=True)
 
@@ -69,14 +72,14 @@ def main():
     )
     model.fit(X_train, y_train)
 
-    # Generate predictions for unseen test data
+    # Predict on test data
     test_df = pd.read_csv(TEST_PATH)
     X_test = extract_features(test_df, training=False)
 
     probs = model.predict_proba(X_test)[:, 1]
     preds = ["y" if p >= THRESHOLD else "n" for p in probs]
 
-    # Write predictions in the required format
+    # Write predictions (only side effect)
     pd.DataFrame({"aki": preds}).to_csv(OUTPUT_PATH, index=False)
 
 
