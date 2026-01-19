@@ -1,4 +1,5 @@
 import os
+import argparse
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -12,11 +13,13 @@ def resolve_path(docker_path, local_path):
     """
     return docker_path if os.path.exists(docker_path) else local_path
 
+# Training data path
 
-# Input and output file locations
-TRAIN_PATH = resolve_path("/data/training.csv", "training.csv")
-TEST_PATH = resolve_path("/data/test.csv", "test.csv")
-OUTPUT_PATH = resolve_path("/data/aki.csv", "aki.csv")
+train_path = "/data/training.csv"   # Marking environment
+if not os.path.exists(train_path):
+    train_path = "training.csv"     # Local environment
+
+# Model configuration
 
 # Probability threshold used to convert model outputs into labels.
 # A lower threshold is chosen to prioritise recall, which aligns
@@ -72,12 +75,19 @@ def extract_features(df, training=True):
 
 
 def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", default="test.csv")
+    parser.add_argument("--output", default="aki.csv")
+    flags = parser.parse_args()
+
+    TEST_PATH = flags.input
+    OUTPUT_PATH = flags.output
+
     # Model training
-    train_df = pd.read_csv(TRAIN_PATH)
+    train_df = pd.read_csv(train_path)
     X_train, y_train = extract_features(train_df, training=True)
 
-    # Random Forest is used for its robustness on tabular data
-    # and its ability to capture non-linear relationships.
     model = RandomForestClassifier(
         n_estimators=300,
         min_samples_leaf=5,
@@ -86,7 +96,7 @@ def main():
         n_jobs=-1
     )
     model.fit(X_train, y_train)
-
+    
     # Inference on test data
     test_df = pd.read_csv(TEST_PATH)
     X_test = extract_features(test_df, training=False)
@@ -95,7 +105,11 @@ def main():
     probs = model.predict_proba(X_test)[:, 1]
     preds = ["y" if p >= THRESHOLD else "n" for p in probs]
 
-    # Output predictions
+    # Write predictions to output file
+    output_dir = os.path.dirname(OUTPUT_PATH)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
     pd.DataFrame({"aki": preds}).to_csv(OUTPUT_PATH, index=False)
 
 
