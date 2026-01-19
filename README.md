@@ -1,9 +1,8 @@
 # SWEMLS Coursework 1 – Acute Kidney Injury Prediction
 
-This repository contains the submission for **SWEMLS Coursework 1**, which focuses on building a software system to predict the presence of **acute kidney injury (AKI)** from patient blood test data.
+This repository contains the submission for SWEMLS Coursework 1, which focuses on building a software system to predict the presence of acute kidney injury (AKI) from patient blood test data.
 
-The system trains a model on historical patient data and generates predictions for an unseen dataset in accordance with the provided specification and automated evaluation framework.
-
+The system trains a machine learning model on historical patient data and generates predictions for an unseen dataset in accordance with the provided specification and automated evaluation framework.
 ---
 
 ## Problem Description
@@ -28,23 +27,29 @@ The primary evaluation metric is the **F3 score**, which places greater emphasis
 
 ├── aki.csv             # Output file containing AKI predictions (generated at runtime)
 
-
-Training data, test data, and generated outputs are intentionally excluded from the repository. These files are supplied to the program by the automated testing environment at runtime.
-
 ---
 
 ## Model Overview
 
-- **Model type**: Logistic Regression  
-- **Input features**:
-  - Patient age
-  - Patient sex
-  - Latest creatinine measurement
-  - Estimated baseline creatinine
-  - Absolute and relative change from baseline
-  - Mean and maximum historical creatinine values
-- **Learning objective**: Binary classification (`AKI present` / `AKI not present`)
-- **Optimisation focus**: Recall, aligned with the F3 score
+Model type: Random Forest classifier
+
+**Input features:**
+
+- Patient age
+- Patient sex
+- Latest creatinine measurement
+- Estimated baseline creatinine
+- Absolute change from baseline
+- Relative change from baseline
+- Mean, maximum, and standard deviation of historical creatinine values
+
+**Learning objective:** Binary classification (AKI present / AKI not present)
+
+**Optimisation focus:** Recall, aligned with the F3 score
+
+Creatinine features are extracted dynamically based on available columns, avoiding assumptions about the number of historical measurements per patient. Class weighting is applied during training to reduce the likelihood of false negatives.
+
+A fixed decision threshold is applied at inference time to further prioritise recall, consistent with the evaluation metric.
 
 Class weighting is applied during training to reduce the likelihood of false negatives. A fixed decision threshold is used at inference time to further prioritise recall.
 
@@ -57,6 +62,6 @@ The model is intentionally simple and interpretable, making it suitable for tabu
 The submission entrypoint is the `model.py` script. When executed, it performs the following steps:
 
 1. Loads the training dataset
-2. Trains the classification model
+2. Trains the Random Forest classification model
 3. Applies the trained model to the test dataset
 4. Writes predictions to `aki.csv`
