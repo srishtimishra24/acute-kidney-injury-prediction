@@ -17,10 +17,15 @@ The primary evaluation metric is the **F3 score**, which places greater emphasis
 ## Repository Structure
 
 ├── model.py            # Submission entrypoint; trains the model and generates aki.csv
+
 ├── requirements.txt    # Python dependencies
+
 ├── Dockerfile          # Provided container configuration (unchanged)
+
 ├── README.md           # Project documentation
+
 ├── training.csv        # Training dataset used to fit the model (local / Docker-mounted)
+
 ├── aki.csv             # Output file containing AKI predictions (generated at runtime)
 
 
