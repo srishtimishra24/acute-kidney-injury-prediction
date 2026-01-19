@@ -1,52 +1,56 @@
 import os
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 
 
 def resolve_path(docker_path, local_path):
     """
-    Return the Docker-mounted path if it exists, otherwise fall back
-    to the local filesystem path.
+    Use the Docker-mounted path if it exists, otherwise fall back to
+    the local file path. This allows the same code to run both locally
+    and in the automated marking environment.
     """
     return docker_path if os.path.exists(docker_path) else local_path
 
 
-# Input and output locations
+# Input and output file locations
 TRAIN_PATH = resolve_path("/data/training.csv", "training.csv")
 TEST_PATH = resolve_path("/data/test.csv", "test.csv")
 OUTPUT_PATH = resolve_path("/data/aki.csv", "aki.csv")
 
-# Decision threshold chosen to prioritise recall
+# Probability threshold used to convert model outputs into labels.
+# A lower threshold is chosen to prioritise recall, which aligns
+# with the F3 evaluation metric used in this coursework.
 THRESHOLD = 0.30
 
 
 def extract_features(df, training=True):
     """
-    Convert raw patient records into a feature matrix suitable for
-    tabular classification models.
+    Convert each patient record into a fixed-length feature vector.
 
-    Creatinine columns are identified dynamically to avoid assumptions
-    about the number of available historical measurements.
+    Creatinine measurements are identified dynamically based on column
+    names to avoid making assumptions about how many historical values
+    are present in the dataset.
     """
     X_rows = []
     y = []
 
     for _, row in df.iterrows():
-        # Dynamically identify creatinine columns present in this dataset
-        creats = row[
-            [c for c in row.index if c.startswith("creatinine_result_")]
-        ].dropna().values
+        # Identify all creatinine columns available for this dataset
+        creat_cols = [c for c in row.index if c.startswith("creatinine_result_")]
+        creats = row[creat_cols].dropna().values
 
+        # Skip records with no valid creatinine history
         if len(creats) == 0:
             continue
 
-        # Most recent creatinine measurement
+        # Use the most recent measurement as the current value
         latest = creats[-1]
 
-        # Baseline estimated from historical values
+        # Estimate baseline from previous measurements
         baseline = np.median(creats[:-1]) if len(creats) > 1 else creats[0]
 
+        # Construct feature set
         X_rows.append({
             "age": row["age"],
             "sex": 1 if row["sex"] == "m" else 0,
@@ -56,8 +60,10 @@ def extract_features(df, training=True):
             "rel_change": (latest - baseline) / baseline if baseline > 0 else 0.0,
             "mean": np.mean(creats),
             "max": np.max(creats),
+            "std": np.std(creats),
         })
 
+        # Target label is only available during training
         if training:
             y.append(1 if row["aki"] == "y" else 0)
 
@@ -66,24 +72,30 @@ def extract_features(df, training=True):
 
 
 def main():
-    # Train model on labelled data
+    # Model training
     train_df = pd.read_csv(TRAIN_PATH)
     X_train, y_train = extract_features(train_df, training=True)
 
-    model = LogisticRegression(
+    # Random Forest is used for its robustness on tabular data
+    # and its ability to capture non-linear relationships.
+    model = RandomForestClassifier(
+        n_estimators=300,
+        min_samples_leaf=5,
         class_weight={0: 1, 1: 4},
-        max_iter=1000
+        random_state=42,
+        n_jobs=-1
     )
     model.fit(X_train, y_train)
 
-    # Generate predictions for test data
+    # Inference on test data
     test_df = pd.read_csv(TEST_PATH)
     X_test = extract_features(test_df, training=False)
 
+    # Convert predicted probabilities into binary labels
     probs = model.predict_proba(X_test)[:, 1]
     preds = ["y" if p >= THRESHOLD else "n" for p in probs]
 
-    # Write predictions in required format
+    # Output predictions
     pd.DataFrame({"aki": preds}).to_csv(OUTPUT_PATH, index=False)
 
 
