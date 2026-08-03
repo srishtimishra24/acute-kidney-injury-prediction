@@ -1,67 +1,174 @@
-# SWEMLS Coursework 1 – Acute Kidney Injury Prediction
+# Acute Kidney Injury Prediction
 
-This repository contains the submission for SWEMLS Coursework 1, which focuses on building a software system to predict the presence of acute kidney injury (AKI) from patient blood test data.
+> A machine learning system for predicting Acute Kidney Injury (AKI) from patient blood test data using engineered clinical features and Random Forest classification.
 
-The system trains a machine learning model on historical patient data and generates predictions for an unseen dataset in accordance with the provided specification and automated evaluation framework.
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![Scikit--Learn](https://img.shields.io/badge/scikit--learn-ML-orange)
+![Healthcare](https://img.shields.io/badge/Domain-Healthcare-green)
+![Status](https://img.shields.io/badge/Status-Completed-success)
+
 ---
 
-## Problem Description
+## Overview
 
-Acute kidney injury is a common indicator of patient deterioration and is typically detected through elevated creatinine levels in blood tests. The goal of this coursework is to develop a model that predicts whether AKI is present based on patient demographics and historical creatinine measurements.
+Acute Kidney Injury (AKI) is a common indicator of patient deterioration and requires early detection to enable timely clinical intervention. Machine learning models can support this process by identifying patients at risk using routinely collected laboratory measurements.
 
-The primary evaluation metric is the **F3 score**, which places greater emphasis on recall than precision. This reflects the clinical requirement to minimise false negatives, where a deteriorating patient might otherwise be missed.
+This project presents a machine learning pipeline for predicting **Acute Kidney Injury (AKI)** from patient demographics and historical creatinine measurements.
+
+The project was developed as part of the **Software Engineering for Machine Learning Systems (SWEMLS)** module at **Imperial College London**.
+
+---
+
+## Objectives
+
+The project aims to:
+
+- Predict the presence of Acute Kidney Injury.
+- Engineer clinically meaningful features from historical creatinine measurements.
+- Optimise model performance for recall-oriented clinical prediction.
+- Produce predictions compatible with the provided evaluation framework.
+
+---
+
+## Problem Statement
+
+Acute Kidney Injury is commonly identified using changes in serum creatinine measurements.
+
+Because failing to identify a patient with AKI may have serious clinical consequences, the coursework evaluates submissions using the **F3 Score**, which places greater emphasis on **Recall** than Precision.
+
+---
+
+## Machine Learning Pipeline
+
+```mermaid
+flowchart LR
+
+A["Patient Blood Tests"]
+
+A --> B["Feature Engineering"]
+
+B --> C["Random Forest Classifier"]
+
+C --> D["Probability Prediction"]
+
+D --> E["Decision Threshold"]
+
+E --> F["AKI Prediction"]
+```
 
 ---
 
 ## Repository Structure
 
-├── model.py            # Submission entrypoint; trains the model and generates aki.csv
-
-├── requirements.txt    # Python dependencies
-
-├── Dockerfile          # Provided container configuration (unchanged)
-
-├── README.md           # Project documentation
-
-├── training.csv        # Training dataset used to fit the model (local / Docker-mounted)
-
-├── aki.csv             # Output file containing AKI predictions (generated at runtime)
+```text
+acute-kidney-injury-prediction/
+│
+├── model.py
+│   Training and inference pipeline.
+│
+├── training.csv
+│   Training dataset.
+│
+├── aki.csv
+│   Generated predictions.
+│
+├── requirements.txt
+│   Python dependencies.
+│
+├── Dockerfile
+│   Container configuration.
+│
+└── README.md
+```
 
 ---
 
-## Model Overview
+## Feature Engineering
 
-Model type: Random Forest classifier
-
-**Input features:**
+The model extracts clinically relevant features including:
 
 - Patient age
 - Patient sex
 - Latest creatinine measurement
 - Estimated baseline creatinine
-- Absolute change from baseline
-- Relative change from baseline
-- Mean, maximum, and standard deviation of historical creatinine values
+- Absolute creatinine change
+- Relative creatinine change
+- Mean historical creatinine
+- Maximum historical creatinine
+- Standard deviation of historical creatinine
 
-**Learning objective:** Binary classification (AKI present / AKI not present)
-
-**Optimisation focus:** Recall, aligned with the F3 score
-
-Creatinine features are extracted dynamically based on available columns, avoiding assumptions about the number of historical measurements per patient. Class weighting is applied during training to reduce the likelihood of false negatives.
-
-A fixed decision threshold is applied at inference time to further prioritise recall, consistent with the evaluation metric.
-
-Class weighting is applied during training to reduce the likelihood of false negatives. A fixed decision threshold is used at inference time to further prioritise recall.
-
-The model is intentionally simple and interpretable, making it suitable for tabular clinical data and consistent with production deployment considerations.
+These features are generated dynamically based on the available laboratory measurements.
 
 ---
 
-## Running the Model
+## Model
 
-The submission entrypoint is the `model.py` script. When executed, it performs the following steps:
+The prediction system uses a **Random Forest Classifier** configured for binary classification.
 
-1. Loads the training dataset
-2. Trains the Random Forest classification model
-3. Applies the trained model to the test dataset
-4. Writes predictions to `aki.csv`
+Key characteristics include:
+
+- Random Forest classification
+- Class-weighted learning
+- Recall-oriented optimisation
+- Threshold-based prediction
+- Interpretable tabular feature representation
+
+---
+
+## Running the Project
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the prediction pipeline:
+
+```bash
+python model.py
+```
+
+The pipeline automatically:
+
+- Loads the training dataset
+- Performs feature engineering
+- Trains the Random Forest model
+- Generates predictions
+- Saves predictions to `aki.csv`
+
+---
+
+## Technologies
+
+- Python
+- scikit-learn
+- pandas
+- NumPy
+- Docker
+
+---
+
+## Evaluation
+
+Performance is evaluated using the **F3 Score**, which prioritises recall over precision to minimise false negatives in a clinical setting.
+
+---
+
+## Future Improvements
+
+Potential extensions include:
+
+- XGBoost
+- LightGBM
+- CatBoost
+- SHAP-based model explainability
+- Hyperparameter optimisation
+- Probability calibration
+- External clinical validation
+
+---
+
+## Acknowledgements
+
+Developed as part of the **Software Engineering for Machine Learning Systems (SWEMLS)** module for the **MSc Computing (Artificial Intelligence & Machine Learning)** programme at **Imperial College London**.
